@@ -13,13 +13,18 @@ module.exports.generate = (event, context, cb) => {
     const insertRecords = manager.newRecordEvents(dynamoRecords);
     console.log(`Filtered and got ${insertRecords.length} filtered records`);
 
-    console.log(JSON.stringify(insertRecords));
-    console.log(`Calling lambda with ${JSON.stringify(insertRecords[0])}`);
-    manager.lambdaCreateLSystem(insertRecords[0]).then((msg) =>{
-
+    //console.log(JSON.stringify(insertRecords));
+    console.log(`Calling generator with ${JSON.stringify(insertRecords[0])}`);
+    let lsystem = manager.lambdaCreateLSystem(insertRecords[0]).then((msg) =>{
       console.log(`Response ${JSON.stringify(msg)}`);
-      cb(null,`Response from lambda: ${msg}`);
+      return msg;
+      //cb(null,`Response from lambda: ${msg}`);
     });
+
+    let rendered = lsystem.then( manager.lambdaRenderLSystem(insertRecords[0]) );
+
+    Promise.all( [lsystem, rendered] ).then( (params) => cb(null, `Done: ${params[0]}`) );
+
   } else {
 
     cb(null, {
