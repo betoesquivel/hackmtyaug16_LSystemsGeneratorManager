@@ -21,9 +21,10 @@ module.exports.generate = (event, context, cb) => {
       //cb(null,`Response from lambda: ${msg}`);
     });
 
+    let s3UploadMsg = lsystem.then( manager.msgToS3(insertRecords[0].id) ); 
     let rendered = lsystem.then( manager.lambdaRenderLSystem(insertRecords[0]) );
 
-    Promise.all( [lsystem, rendered] ).then( (params) => cb(null, `Done: ${params[0]}`) );
+    Promise.all( [lsystem, s3UploadMsg, rendered] ).then( (params) => cb(null, `Done: ${params[0]}`) );
 
   } else {
 
