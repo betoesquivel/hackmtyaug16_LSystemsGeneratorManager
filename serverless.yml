@@ -58,15 +58,15 @@ functions:
 #     - sns: greeter-topic
 
 
-#resources:
-  #Resources:
-    #mapping:
-      #Type: AWS::Lambda::EventSourceMapping
-      #Properties:
-        #BatchSize: 10
-        #EventSourceArn: "arn:aws:dynamodb:eu-west-1:032148349691:table/lsystems/stream/2016-08-28T03:00:24.299"
-        #FunctionName:
-          #Fn::GetAtt:
-            #- "bigben-lsystems-generator-manager-dev-generate"
-            #- "Arn"
-        #StartingPosition: "TRIM_HORIZON"
+resources:
+  Resources:
+    mapping:
+      Type: AWS::Lambda::EventSourceMapping
+      Properties:
+        BatchSize: 10
+        EventSourceArn: "arn:aws:dynamodb:eu-west-1:032148349691:table/lsystems/stream/2016-08-28T03:00:24.299"
+        FunctionName:
+          Fn::GetAtt:
+            - "generate"
+            - "Arn"
+        StartingPosition: "TRIM_HORIZON"
