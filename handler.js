@@ -3,45 +3,32 @@
 
 var manager = require('./lib/manager.js');
 
-
-const parseS3EventRecord = ( record ) {
-
-  const bucket = record['s3']['bucket']['name'];
-  const key = record['s3']['object']['key'];
-
-};
-
 module.exports.generate = (event, context, cb) => {
 
-  const dynamoRecords = manager.parseDynamoEvents(event);
-  if (dynamoRecords) {
-    console.log(`Got ${event.Records.length} dynamo events`);
-    console.log(`Parsed ${dynamoRecords.length} records`);
+  let individualRenders = [];
+  const s3Records = event.Records;
+  console.log(`Received ${s3Records.length} rendering jobs.`);
 
-    const insertRecords = manager.newRecordEvents(dynamoRecords);
-    console.log(`Filtered and got ${insertRecords.length} filtered records`);
+  for ( s3EventRecord of s3Records ) {
 
-    //console.log(JSON.stringify(insertRecords));
-    console.log(`Calling generator with ${JSON.stringify(insertRecords[0])}`);
-    let lsystem = manager.lambdaCreateLSystem(insertRecords[0]).then((msg) =>{
-      console.log(`Response ${JSON.stringify(msg)}`);
-      return msg;
-      //cb(null,`Response from lambda: ${msg}`);
-    });
+    let parsedRecord = manager.parseS3EventRecord( s3EventRecord );
+    let s3DownloadResponse = manager.downloadS3Individual( parsedRecord );
+    let individual = s3DownloadResponse.then( manager.parseS3DownloadResponse );
+    let rendered = manager.lambdaRenderLSystem( individual );
 
-    let s3UploadMsg = lsystem.then( manager.msgToS3(insertRecords[0].id) ); 
-    let rendered = lsystem.then( manager.lambdaRenderLSystem(insertRecords[0]) );
+    Promise.all( [individual, rendered] ).then( (params) => console.log(`Done: ${JSON.stringify(params)}`) ) 
 
-    Promise.all( [lsystem, s3UploadMsg, rendered] ).then( (params) => cb(null, `Done: ${params[0]}`) );
+    individualRenders.push( Promise.all( [individual, rendered] ) );
 
-  } else {
+  } 
 
-    cb(null, {
-      message: 'Go Serverless v1.0! Your function executed successfully!',
-      event
-    });
-
-  }
+  Promise.all( individualRenders )
+          .then( (individuals) => {
+            cb(null, `Finished ${individuals.length} renders`);
+          })
+          .catch( (err) => {
+            cb(`Couldn't finish because of:\n${JSON.stringify(err)}`);
+          });
 
 };
 
