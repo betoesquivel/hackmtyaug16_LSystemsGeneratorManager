@@ -3,6 +3,14 @@
 
 var manager = require('./lib/manager.js');
 
+
+const parseS3EventRecord = ( record ) {
+
+  const bucket = record['s3']['bucket']['name'];
+  const key = record['s3']['object']['key'];
+
+};
+
 module.exports.generate = (event, context, cb) => {
 
   const dynamoRecords = manager.parseDynamoEvents(event);
