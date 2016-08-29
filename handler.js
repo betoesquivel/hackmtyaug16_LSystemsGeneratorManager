@@ -37,11 +37,12 @@ const parseS3DownloadResponse = ( response ) => {
   return { angle: angle, g_commands: g_commands };
 };
 
-const lambdaRenderLSystem = (individual) =>  {
-  console.log(`Calling painter with ${individual}.`);
+const lambdaRenderLSystem = (key, individual) =>  {
+  const payload = Object.assign({}, individual, {'id': key.split('.')[0]});
+  console.log(`Calling painter with ${payload}.`);
   const params = {
     FunctionName: 'bigben-lsystems-painter-dev-s3render',
-    Payload: JSON.stringify(individual)
+    Payload: JSON.stringify(payload)
   };
   return lambda.invoke(params).promise()
                 .catch( error({
