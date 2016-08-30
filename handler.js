@@ -12,6 +12,8 @@ const error = (context) => (err) => {
 
 const parseS3EventRecord = ( record ) => {
 
+
+  console.log(`Received s3 event ${JSON.stringify(record)}`);
   const bucket = record.s3.bucket.name;
   const key = record.s3.object.key;
 
@@ -20,6 +22,7 @@ const parseS3EventRecord = ( record ) => {
 };
 
 const downloadS3Individual = ( s3Individual ) => {
+  console.log(`Received individual ${JSON.stringify(s3Individual)}`);
   return (
     s3.getObject( s3Individual ).promise()
           .catch( error({
@@ -30,6 +33,7 @@ const downloadS3Individual = ( s3Individual ) => {
 };
 
 const parseS3DownloadResponse = ( response ) => {
+  console.log(`Received download response: ${response.Body.toString()}`);
   const fileContents = response.Body.toString();
   const data = fileContents.split(':');
   const angle = data[0];
@@ -37,7 +41,8 @@ const parseS3DownloadResponse = ( response ) => {
   return { angle: angle, g_commands: g_commands };
 };
 
-const lambdaRenderLSystem = (key, individual) =>  {
+const lambdaRenderLSystem = (key) => (individual) =>  {
+  console.log(`Rendering ${key} and ${individual}.`);
   const payload = Object.assign({}, individual, {'id': key.split('.')[0]});
   console.log(`Calling painter with ${payload}.`);
   const params = {
@@ -66,7 +71,7 @@ module.exports.generate = (event, context, cb) => {
         let parsedRecord = parseS3EventRecord( s3EventRecord );
         let s3DownloadResponse = downloadS3Individual( parsedRecord );
         let individual = s3DownloadResponse.then( parseS3DownloadResponse );
-        let rendered = individual.then( lambdaRenderLSystem );
+        let rendered = individual.then( lambdaRenderLSystem(parsedRecord.Key) );
 
         Promise.all( [individual, rendered] ).then( (params) => console.log(`Done: ${JSON.stringify(params)}`) );
 
@@ -84,7 +89,7 @@ module.exports.generate = (event, context, cb) => {
     }
 
   } else {
-    cb(`Couldn't finish because of:\n${JSON.stringify(err)}`);
+    cb(`Couldn't finish because empty Records`);
   }
 
 
